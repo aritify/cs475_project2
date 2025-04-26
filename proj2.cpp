@@ -31,3 +31,69 @@ const float RANDOM_TEMP =			              10.0;	// plus or minus noise
 
 const float MIDTEMP =				                40.0;
 const float MIDPRECIP =				              10.0;
+
+// Function Prototypes
+void Deer();
+void Grain();
+void Watcher();
+void MyAgent();
+
+// main program:
+int
+main( int argc, char *argv[ ] )
+{
+#ifndef _OPENMP
+	fprintf( stderr, "No OpenMP support!\n" );
+	return 1;
+#endif
+
+    omp_set_num_threads( 4 );	// same as # of sections
+    #pragma omp parallel sections
+    {
+    	#pragma omp section
+    	{
+    		Deer( );
+    	}
+    
+    	#pragma omp section
+    	{
+    		Grain( );
+    	}
+    
+    	#pragma omp section
+    	{
+    		Watcher( );
+    	}
+    
+    	#pragma omp section
+    	{
+    		MyAgent( );	// your own
+    	}
+    }       // implied barrier -- all functions must return in order
+            // to allow any of them to get past here
+    return 0;
+}
+
+void
+Deer()
+{
+
+}
+
+void
+Grain()
+{
+  
+}
+
+void
+Watcher()
+{
+  
+}
+
+void
+MyAgent()
+{
+  
+}
