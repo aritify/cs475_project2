@@ -93,9 +93,20 @@ Deer()
 	{
 		// compute a temporary next-value for this quantity
 		// based on the current state of the simulation:
+		int nextNumDeer = NowNumDeer;
+		int carryingCapacity = (int)( NowHeight );
+		if( nextNumDeer < carryingCapacity )
+        	nextNumDeer++;
+		else	
+        	if( nextNumDeer > carryingCapacity )
+                nextNumDeer--;
+
+		if( nextNumDeer < 0 )
+        	nextNumDeer = 0;
 	
 		// DoneComputing barrier:
 		WaitBarrier( );
+		NowNumDeer = nextNumDeer;		// Assign the calculated number of deer to the global for the next global cycle
 	
 		// DoneAssigning barrier:
 		WaitBarrier( );
@@ -109,14 +120,67 @@ Deer()
 void
 Grain()
 {
-  
+	while( NowYear < 2031 )
+	{
+		// compute a temporary next-value for this quantity
+		// based on the current state of the simulation:
+		float tempFactor = exp(   -SQR(  ( NowTemp - MIDTEMP ) / 10.  )   );
+		float precipFactor = exp(   -SQR(  ( NowPrecip - MIDPRECIP ) / 10.  )   );
+
+		float nextHeight = NowHeight;
+		nextHeight += tempFactor * precipFactor * GRAIN_GROWS_PER_MONTH;
+		nextHeight -= (float)NowNumDeer * ONE_DEER_EATS_PER_MONTH;
+		if( nextHeight < 0. ) nextHeight = 0.;
+
+		// DoneComputing barrier:
+		WaitBarrier( );
+		NowHeight = nextHeight;			// Set next height to the global NowHeight for next month
+
+		// DoneAssigning barrier:
+		WaitBarrier( );
+
+		// DonePrinting barrier:
+		WaitBarrier( );
+
+	}
 }
 
 
 void
 Watcher()
 {
-  
+	while( NowYear < 2031 )
+	{
+		// compute a temporary next-value for this quantity
+		// based on the current state of the simulation:
+		float ang = (  30.*(float)NowMonth + 15.  ) * ( M_PI / 180. );	// angle of earth around the sun
+
+		float temp = AVG_TEMP - AMP_TEMP * cos( ang );
+		NowTemp = temp + Ranf( -RANDOM_TEMP, RANDOM_TEMP );
+
+		float precip = AVG_PRECIP_PER_MONTH + AMP_PRECIP_PER_MONTH * sin( ang );
+		NowPrecip = precip + Ranf( -RANDOM_PRECIP, RANDOM_PRECIP );
+		if( NowPrecip < 0. )
+			NowPrecip = 0.;
+	
+		// DoneComputing barrier:
+		WaitBarrier( );		// Wait for Deer and Grain to finish assigning
+	
+		// DoneAssigning barrier:
+		WaitBarrier( );
+		// Print Values to screen
+		if (NowMonth > 11) {		// Months are 0-11
+			NowMonth = 0;
+			NowYear++;
+		}
+		else {
+			NowMonth++;
+		}
+	
+		// DonePrinting barrier:
+		WaitBarrier( );
+
+	}
 }
 
 
@@ -126,7 +190,7 @@ MyAgent()
   
 }
 
-
+// Helper Functions
 float
 SQR( float x )
 {
@@ -170,4 +234,24 @@ WaitBarrier( )
 
 	#pragma omp atomic
 	NumGone++;						// this flags how many threads have returned
+}
+
+
+float
+Ranf( float low, float high )
+{
+	float r = (float) rand();               // 0 - RAND_MAX
+	float t = r  /  (float) RAND_MAX;       // 0. - 1.
+
+	return   low  +  t * ( high - low );
+}
+
+
+int
+Ranf( int ilow, int ihigh )
+{
+	float low = (float)ilow;
+	float high = ceil( (float)ihigh );
+
+	return (int) Ranf(low,high);
 }
