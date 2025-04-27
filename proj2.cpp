@@ -6,14 +6,14 @@
 #include <omp.h>
 
 // Global Variables - "State" of the system
-int	NowYear =       2025;		      	// 2025- 2030
-int	NowMonth =      0;		        	// 0 - 11
+int	NowYear =      	 2025;		      	// 2025- 2030
+int	NowMonth =      	0;		        // 0 - 11
 
 float	NowPrecip;		              	// inches of rain per month
 float	NowTemp;		                // temperature this month
-float	NowHeight =   5.;		        // grain height in inches
-int		NowNumDeer =    2;		        // number of deer in the current population
-// int NowNumWolves = 1;
+float	NowHeight = 	5.;		        // grain height in inches
+int		NowNumDeer =   	2;		        // number of deer in the current population
+// int NowNumWolves = 	1;
 
 // Barrier Global Variables
 omp_lock_t		Lock;
@@ -50,6 +50,7 @@ void	WaitBarrier( );
 float	Ranf( float, float );
 int		Ranf( int, int );
 
+
 // main program:
 int
 main( int argc, char *argv[ ] )
@@ -59,7 +60,8 @@ main( int argc, char *argv[ ] )
 	return 1;
 #endif
 
-    omp_set_num_threads( 3 );	// same as # of sections
+    omp_set_num_threads( 3 );	// or 4. Same as # of sections
+	InitBarrier( 3 );			// or 4
     #pragma omp parallel sections
     {
     	#pragma omp section
@@ -85,6 +87,7 @@ main( int argc, char *argv[ ] )
             // to allow any of them to get past here
     return 0;
 }
+
 
 void
 Deer()
@@ -141,7 +144,6 @@ Grain()
 
 		// DonePrinting barrier:
 		WaitBarrier( );
-
 	}
 }
 
@@ -168,8 +170,13 @@ Watcher()
 	
 		// DoneAssigning barrier:
 		WaitBarrier( );
-		// Print Values to screen
-		if (NowMonth > 11) {		// Months are 0-11
+		/* Printing values to screen */
+		/* Month, Temp, Precipitation, Grain Height, NumDeer, NumWolves */
+		printf("%5d %5.2f %5.2f %5.2f %5d\n",
+			  (NowMonth+(NowYear-2025)*12), NowTemp, NowPrecip, NowHeight, NowNumDeer);
+
+		/* Increment NowMonth and NowYear */
+		if (NowMonth >= 11) {		// Months are 0-11
 			NowMonth = 0;
 			NowYear++;
 		}
@@ -179,7 +186,6 @@ Watcher()
 	
 		// DonePrinting barrier:
 		WaitBarrier( );
-
 	}
 }
 
@@ -187,14 +193,28 @@ Watcher()
 void
 MyAgent()
 {
-  
+	while( NowYear < 2031 )
+	{
+		// compute a temporary next-value for this quantity
+		// based on the current state of the simulation:
+
+		// DoneComputing barrier:
+		WaitBarrier( );
+
+		// DoneAssigning barrier:
+		WaitBarrier( );
+
+		// DonePrinting barrier:
+		WaitBarrier( );
+	}
 }
+
 
 // Helper Functions
 float
 SQR( float x )
 {
-        return x*x;
+	return x*x;
 }
 
 
