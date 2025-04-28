@@ -11,9 +11,9 @@ int	NowMonth =      	0;		        // 0 - 11
 
 float	NowPrecip;		              	// inches of rain per month
 float	NowTemp;		                // temperature this month
-float	NowHeight = 	5.;		        // grain height in inches
-int		NowNumDeer =   	2;		        // number of deer in the current population
-// int NowNumWolves = 	1;
+float	NowHeight = 	7.;		        // grain height in inches
+int		NowNumDeer =   	4;		        // number of deer in the current population
+int 	NowNumWolf = 	0;
 
 // Barrier Global Variables
 omp_lock_t		Lock;
@@ -42,8 +42,8 @@ const float MIDPRECIP =				            10.0;
 // Function Prototypes
 void 	Deer();
 void 	Grain();
+void 	Wolf();
 void 	Watcher();
-void 	MyAgent();
 float 	SQR( float x );
 void	InitBarrier( int );
 void	WaitBarrier( );
@@ -60,8 +60,8 @@ main( int argc, char *argv[ ] )
 	return 1;
 #endif
 
-    omp_set_num_threads( 3 );	// or 4. Same as # of sections
-	InitBarrier( 3 );			// or 4
+    omp_set_num_threads( 4 );	// or 4. Same as # of sections
+	InitBarrier( 4 );			// or 4
     #pragma omp parallel sections
     {
     	#pragma omp section
@@ -73,16 +73,17 @@ main( int argc, char *argv[ ] )
     	{
     		Grain( );
     	}
+
+		#pragma omp section
+    	{
+    		Wolf( );	// your own
+    	}
     
     	#pragma omp section
     	{
     		Watcher( );
     	}
     
-    	/*#pragma omp section
-    	{
-    		MyAgent( );	// your own
-    	}*/
     }       // implied barrier -- all functions must return in order
             // to allow any of them to get past here
     return 0;
@@ -98,9 +99,10 @@ Deer()
 		// based on the current state of the simulation:
 		int nextNumDeer = NowNumDeer;
 		int carryingCapacity = (int)( NowHeight );
-		if( nextNumDeer < carryingCapacity )
+		if( nextNumDeer < carryingCapacity ) {
         	nextNumDeer++;
-		else	
+		}
+		else
         	if( nextNumDeer > carryingCapacity )
                 nextNumDeer--;
 
@@ -149,8 +151,48 @@ Grain()
 
 
 void
+Wolf()
+{
+	while( NowYear < 2031 )
+	{
+		// compute a temporary next-value for this quantity
+		// based on the current state of the simulation:
+		int nextNumWolf = NowNumWolf;
+		int carryingCapacity = NowNumDeer;
+		if ( nextNumWolf < carryingCapacity ) {
+			int wolfAttract = Ranf(0, 9);	// 10% chance to attract wolves if NumDeer is high enough
+			if (wolfAttract == 0)
+				nextNumWolf++;
+		}
+		else
+			if ( nextNumWolf > carryingCapacity )
+				nextNumWolf--;
+		
+		if( nextNumWolf < 0 )
+			nextNumWolf = 0;
+
+		// DoneComputing barrier:
+		WaitBarrier( );
+		NowNumWolf = nextNumWolf;
+		NowNumDeer = NowNumDeer - nextNumWolf;
+		if ( NowNumDeer < 0 )
+			NowNumDeer = 0;
+
+		// DoneAssigning barrier:
+		WaitBarrier( );
+
+		// DonePrinting barrier:
+		WaitBarrier( );
+	}
+}
+
+
+void
 Watcher()
 {
+	FILE *csv;
+	csv = fopen("output.csv", "w+");
+
 	while( NowYear < 2031 )
 	{
 		// compute a temporary next-value for this quantity
@@ -171,9 +213,10 @@ Watcher()
 		// DoneAssigning barrier:
 		WaitBarrier( );
 		/* Printing values to screen */
-		/* Month, Temp, Precipitation, Grain Height, NumDeer, NumWolves */
-		printf("%5d %5.2f %5.2f %5.2f %5d\n",
-			  (NowMonth+(NowYear-2025)*12), NowTemp, NowPrecip, NowHeight, NowNumDeer);
+		/* Month, Temp, Precipitation, Grain Height, NumDeer, NumWolf */
+		
+		fprintf(csv, "%5d %5.2f %5.2f %5.2f %5d %5d\n",
+			  (NowMonth+(NowYear-2025)*12), NowTemp, NowPrecip, NowHeight, NowNumDeer, NowNumWolf);
 
 		/* Increment NowMonth and NowYear */
 		if (NowMonth >= 11) {		// Months are 0-11
@@ -187,26 +230,7 @@ Watcher()
 		// DonePrinting barrier:
 		WaitBarrier( );
 	}
-}
-
-
-void
-MyAgent()
-{
-	while( NowYear < 2031 )
-	{
-		// compute a temporary next-value for this quantity
-		// based on the current state of the simulation:
-
-		// DoneComputing barrier:
-		WaitBarrier( );
-
-		// DoneAssigning barrier:
-		WaitBarrier( );
-
-		// DonePrinting barrier:
-		WaitBarrier( );
-	}
+	fclose(csv);
 }
 
 
