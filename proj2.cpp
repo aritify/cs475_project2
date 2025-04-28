@@ -215,7 +215,7 @@ Watcher()
 		/* Printing values to screen */
 		/* Month, Temp, Precipitation, Grain Height, NumDeer, NumWolf */
 		
-		fprintf(csv, "%5d %5.2f %5.2f %5.2f %5d %5d\n",
+		fprintf(csv, "%5d, %5.2f, %5.2f, %5.2f, %5d, %5d\n",
 			  (NowMonth+(NowYear-2025)*12), NowTemp, NowPrecip, NowHeight, NowNumDeer, NowNumWolf);
 
 		/* Increment NowMonth and NowYear */
