@@ -216,7 +216,7 @@ Watcher()
 		/* Month, Temp, Precipitation, Grain Height, NumDeer, NumWolf */
 		/* CSV output, Convcert from in>cm, F>C */
 		fprintf(csv, "%5d, %5.2f, %5.2f, %5.2f, %5d, %5d\n",
-			  (NowMonth+(NowYear-2025)*12), ( (5./9.)*( NowTemp-32 ) ), NowPrecip*2.54, NowHeight*2.54, NowNumDeer, NowNumWolf);
+			  (NowMonth+(NowYear-2025)*12), ( (5./9.)*( NowTemp-32 ) ), NowPrecip, NowHeight, NowNumDeer, NowNumWolf);
 
 		/* Increment NowMonth and NowYear */
 		if (NowMonth >= 11) {		// Months are 0-11
